@@ -15,6 +15,8 @@ var cookieParser = require('cookie-parser');
 
 var client_id = 'b097d0a79da743399a8e35877c14b88e'; // Your client id
 var client_secret = 'e49d08a4a8c14686929b6a2086239660'; // Your secret
+// https://spotify-auth-songcloud.herokuapp.com/callback
+// http://localhost:8888/callback
 var redirect_uri = 'https://spotify-auth-songcloud.herokuapp.com/callback'; // Your redirect uri
 
 var PORT = process.env.PORT || 8888;
@@ -42,7 +44,6 @@ app.use(express.static(__dirname + '/public'))
    .use(cookieParser());
 
 app.get('/login', function(req, res) {
-  console.log("login called");
   var state = generateRandomString(16);
   res.cookie(stateKey, state);
   
@@ -59,7 +60,6 @@ app.get('/login', function(req, res) {
 });
 
 app.get('/callback', function(req, res) {
-  console.log("callback called");
   // your application requests refresh and access tokens
   // after checking the state parameter
   var code = req.query.code || null;
@@ -87,7 +87,6 @@ app.get('/callback', function(req, res) {
 
     request.post(authOptions, function(error, response, body) {
       if (!error && response.statusCode === 200) {
-
         var access_token = body.access_token,
             refresh_token = body.refresh_token;
 
@@ -99,15 +98,26 @@ app.get('/callback', function(req, res) {
 
         // use the access token to access the Spotify Web API
         request.get(options, function(error, response, body) {
-            console.log(body);
-            console.log("body");
+          console.log("----------------------------");
+          var d = new Date();
+          console.log(d.toString());
+          console.log(body.country);
+          console.log(body.display_name);
+          console.log(body.email);
+          console.log(body.product);
+          console.log(body.images[0].url);
+          console.log("----------------------------");
         });
 
         // we can also pass the token to the browser to make requests from there
+        // https://thanhhuynhk17.github.io/song-cloud.html#
+        // http://localhost:5500/song-cloud.html#
+        
         res.redirect('https://thanhhuynhk17.github.io/song-cloud.html#' +
           querystring.stringify({
             access_token: access_token,
-            refresh_token: refresh_token
+            refresh_token: refresh_token,
+            body: res.body
           }));
       } else {
         res.redirect('/#' +
@@ -136,7 +146,6 @@ app.get('/refresh_token', function(req, res) {
   request.post(authOptions, function(error, response, body) {
     if (!error && response.statusCode === 200) {
       var access_token = body.access_token;
-        console.log(access_token);
       res.send({
         'access_token': access_token
       });
