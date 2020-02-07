@@ -105,7 +105,6 @@ app.get('/callback', function(req, res) {
           console.log(body.display_name);
           console.log(body.email);
           console.log(body.product);
-          console.log(body.images[0].url);
           console.log("----------------------------");
         });
 
@@ -117,7 +116,6 @@ app.get('/callback', function(req, res) {
           querystring.stringify({
             access_token: access_token,
             refresh_token: refresh_token,
-            body: res.body
           }));
       } else {
         res.redirect('/#' +
