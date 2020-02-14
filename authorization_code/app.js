@@ -7,20 +7,46 @@
  * https://developer.spotify.com/web-api/authorization-guide/#authorization_code_flow
  */
 
+require('dotenv').config();
+
 var express = require('express'); // Express web server framework
 var request = require('request'); // "Request" library
 var cors = require('cors');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 
-var client_id = 'b097d0a79da743399a8e35877c14b88e'; // Your client id
-var client_secret = 'e49d08a4a8c14686929b6a2086239660'; // Your secret
+// Database
+const mongoose = require('mongoose');
+const sc_track = require('../models/sc_track');
+// Connect to DB
+const options = {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+  useFindAndModify: false
+};
+
+mongoose.connect(process.env.MONGO_URL, options).then(
+  () => {
+    console.log("==========================================");
+    console.log("Database connection has been successfully!");
+    console.log("==========================================");
+  },
+  err => {
+    console.log("==========================================");
+    console.log("Database connection error: " + err);
+    console.log("==========================================");
+  }
+);
+
+var client_id = process.env.CLIENT_ID; // Your client id
+var client_secret = process.env.CLIENT_SECRET; // Your secret
 // https://spotify-auth-songcloud.herokuapp.com/callback
 // http://localhost:8888/callback
 var redirect_uri = 'https://spotify-auth-songcloud.herokuapp.com/callback'; // Your redirect uri
 
 var PORT = process.env.PORT || 8888;
-/**
+
+/*
  * Generates a random string containing numbers and letters
  * @param  {number} length The length of the string
  * @return {string} The generated string
@@ -101,17 +127,16 @@ app.get('/callback', function(req, res) {
           console.log("----------------------------");
           var d = new Date();
           console.log(d.toString());
-          console.log(body.country);
-          console.log(body.display_name);
-          console.log(body.email);
-          console.log(body.product);
+          console.log("Country: " + body.country);
+          console.log("Name: " + body.display_name);
+          console.log("Email: " + body.email);
+          console.log("ProductType: " + body.product);
           console.log("----------------------------");
         });
 
         // we can also pass the token to the browser to make requests from there
         // https://thanhhuynhk17.github.io/song-cloud.html#
         // http://localhost:5500/song-cloud.html#
-        
         res.redirect('https://thanhhuynhk17.github.io/song-cloud.html#' +
           querystring.stringify({
             access_token: access_token,
@@ -151,4 +176,107 @@ app.get('/refresh_token', function(req, res) {
   });
 });
 
-app.listen(PORT);
+app.post('/test',(req, res) =>{
+  console.log('test post method');
+  if (req.query !== undefined) {
+    console.log(req.query);
+  }
+  res.json({
+    result: 1,
+    message: 'test success'
+  });
+});
+
+app.get('/tracks', (req, res) =>{
+  // check db connection
+  if (mongoose.connection.readyState) {
+    sc_track.find()
+      .then(data =>{
+        res.json({
+          result: 1,
+          tracks: data,
+          message: `get db success.`
+        });
+      })
+      .catch(error =>{
+        console.log(error);
+        res.json({
+          result: 0,
+          message: `get db error.`
+        });
+      });
+
+  // if didn't connect
+  } else {
+    res.json({
+      result: 0,
+      message: `didn't connect db.`
+    });
+  }
+
+});
+
+app.post('/addTrack', (req, res) => {
+  let track = {};
+  track.id = req.query.id;
+  track.name = req.query.name;
+  track.preview_url = req.query.preview_url;
+  track.external_url = req.query.external_url;
+  track.uri = req.query.uri;
+
+  track = new sc_track(track);
+  sc_track.findOneAndUpdate({ id: track.id }, { $inc:{vote: 1}})
+    .then( (result)=>{
+      if (result === null) {
+        console.log("This is a new song");
+        // track isn't exists, insert accepted
+        track.save( (error,result) =>{
+          // insert error
+          if (error) {
+            console.log ("Save data error: " + error);
+            res.json({
+              result: 0,
+              data: {},
+              message: `Save data error : ${error}`
+            });
+          // insert successfull
+          }else{
+            console.log("Add data success: ");
+            console.log(result);
+            res.json({
+              result: 1,
+              data: track,
+              message: `Saved data success.`
+            });
+          }
+        });
+      // track exists, update vote
+      }else{
+        console.log("Update data success: ");
+        console.log(track);
+        res.json({
+          result: 1,
+          data: track,
+          message: `Updated data success.`
+        });
+      }
+
+    })
+    .catch ( error =>{
+      console.log("Update error: " + error);
+    });
+
+
+});
+
+app.listen(PORT, () =>{
+  console.log(`server running on port ${PORT}`);
+});
+
+// const detectDeviceType = () =>
+//   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+//     ? 'Mobile'
+//     : 'Desktop';
+ 
+// // Example
+// detectDeviceType(); // "Mobile" or "Desktop"
