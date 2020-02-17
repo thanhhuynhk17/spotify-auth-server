@@ -8,7 +8,7 @@
  */
 
 require('dotenv').config();
-require('heroku-self-ping')("https://spotify-auth-songcloud.herokuapp.com/");
+// require('heroku-self-ping')("https://spotify-auth-songcloud.herokuapp.com/");
 
 var express = require('express'); // Express web server framework
 var request = require('request'); // "Request" library
