@@ -8,11 +8,6 @@
  */
 
 require('dotenv').config();
-// var selfPing = require("heroku-self-ping");
-// selfPing.HerokuSelfPing("https://spotify-auth-songcloud.herokuapp.com/", {
-//     interval: 20 * 60 * 1000,
-//     verbose: true
-// });
 
 var express = require('express'); // Express web server framework
 var request = require('request'); // "Request" library
